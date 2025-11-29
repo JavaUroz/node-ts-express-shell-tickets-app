@@ -31,5 +31,5 @@ export class TicketController {
     }
     
     public workingOn = async (req: Request, res: Response) => 
-        res.json(this.ticketService.lastTicketNumber)
+        res.json(this.ticketService.lastWorkingOnTickets )
 }

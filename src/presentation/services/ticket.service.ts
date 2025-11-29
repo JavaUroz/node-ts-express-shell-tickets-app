@@ -1,9 +1,13 @@
 import { UuidAdapter } from "../../config/uuid.adapter";
 import { Ticket } from "../../domain/interfaces/ticket";
+import { WssService } from "./wss.service";
 
 
 export class TicketService {
-    public readonly tickets: Ticket [] = [
+
+    private readonly wssService = WssService.instace
+
+    public tickets: Ticket [] = [
         { id: UuidAdapter.v4(), number: 1, createdAt: new Date(), done: false },
         { id: UuidAdapter.v4(), number: 2, createdAt: new Date(), done: false },
         { id: UuidAdapter.v4(), number: 3, createdAt: new Date(), done: false },
@@ -20,7 +24,7 @@ export class TicketService {
     }
     
     public get lastWorkingOnTickets(): Ticket[] {
-        return this.tickets.splice(0, 4);
+        return this.tickets.slice(0, 4);
     }
 
     public get lastTicketNumber(): number { 
@@ -35,7 +39,7 @@ export class TicketService {
             done: false       
         }
         this.tickets.push(ticket);
-        //TODO: WS
+        this.OnTicketNumberChanged();
 
         return ticket;
     }
@@ -49,7 +53,8 @@ export class TicketService {
 
         this.workingOnTicket.unshift({ ...ticket });
 
-        //TODO: WS
+        this.OnTicketNumberChanged();
+        this.OnWorkingOnChanged();
 
         return { status: 'ok', ticket }
     }
@@ -58,7 +63,7 @@ export class TicketService {
         const ticket = this.tickets.find(t => t.id = id);
         if (!ticket) return { status: 'error', message: 'Ticket no encontrado'}
 
-        this.tickets.map(ticket => {
+        this.tickets = this.tickets.map(ticket => {
             if (ticket.id === id) {
                 ticket.done = true;
             }
@@ -66,6 +71,14 @@ export class TicketService {
         });
 
         return { status: 'ok' }
+    }
+
+    private OnTicketNumberChanged = () => {
+        this.wssService.sendMessage('on-ticket-count-changed', this.pendingTicket.length)
+    }
+
+    private OnWorkingOnChanged = () => {
+        this.wssService.sendMessage('on-working-on-changed', this.lastWorkingOnTickets)
     }
 
 }
